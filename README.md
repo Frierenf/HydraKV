@@ -7,13 +7,15 @@
 
 ## 1 Overview
 
-HydraKV is a research implementation based on **LevelDB**. It combines hot/cold data management in DRAM, PM table compaction, and Region-based SSTable management on SSDs.
+HydraKV is an LSM-tree key-value storage system that coordinates **DRAM, persistent memory (PM), and SSDs**. It manages data according to access temperature to reduce the overhead of data movement and compaction.
 
-This repository contains:
+Its design has three main components:
 
-1. **The HydraKV storage engine**, including the hot/cold detector, PM tables, a PM-resident B+ tree for SSD data locations, and Region compaction.
-2. **Benchmark drivers**, including `db_bench` and the YCSB C++ client (`ycsbc`).
-3. **Workloads and scripts** for configuring and running storage experiments.
+1. **Hot/cold data management in DRAM.** A layered LRU detector identifies hot and cold keys, and writes are directed to separate MemTables.
+2. **Priority-aware PM compaction and indexing.** MemTables are copied into PM and merged through pointer updates. Pipelined compaction preferentially retains hot data in PM and migrates cold data to SSDs. A persistent B+ tree indexes data locations on SSDs.
+3. **Adaptive SSD management.** SSTables are organized into Regions with dynamically adjusted key ranges. Compaction is guided by workload read/write ratios and HyperLogLog-based estimates of invalid-data ratios.
+
+These mechanisms aim to reduce write stalls and compaction I/O while improving read efficiency and SSD space utilization.
 
 ---
 
